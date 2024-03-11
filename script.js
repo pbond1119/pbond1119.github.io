@@ -38,7 +38,7 @@ WebMidi.outputs.forEach(function (output, num) {
 
 // define MIDI processing function
 const midiProcess = function (midiNoteInput) {
-  let rootNote = midiNoteInput.note.number;
+  let rootNote = midiNoteInput.note.number + transposition;
   let chordType = dropChord.value;
   // this lets us change the intervals that are being pushed to the output
   let intervals;
@@ -103,10 +103,13 @@ dropInsIO.addEventListener("change", function () {
     let midiNoteOutput = midiProcess(someMIDI);
     // Stop only the notes that were played
     midiNoteOutput.forEach((note) => {
+      // this finds the index of the active notes that were put into the array activeNotes
       let index = activeNotes.indexOf(note);
+      // !== is a strict inequality which seems like it does a better job at always seeing the different notes as different notes
       if (index !== -1) {
         myOutput.stopNote(note);
-        activeNotes.splice(index, 1); // Remove the note from activeNotes
+        // .splice is a method that removes or adds something from an array
+        activeNotes.splice(index, 1); // Remove the note from activeNotes at the specified index that is being referened
       }
     });
   });

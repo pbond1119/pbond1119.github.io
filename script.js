@@ -59,7 +59,7 @@ const midiProcess = function (midiNoteInput) {
   let notes = intervals.map((interval) => rootNote + interval);
 
   let attack = midiNoteInput.attack; // Use velocity directly from input
-
+  console.log(notes);
   // Send each note of the chord to the output
   notes.forEach((note) => {
     myOutput.playNote(note, { attack: attack, duration: 0.5 });
@@ -93,23 +93,39 @@ dropInsIO.addEventListener("change", function () {
     // When a note on event is received, send a note on message to the output device.
     // This can trigger a sound or action on the MIDI output device.
     let midiNoteOutput = midiProcess(someMIDI);
-    // Add the notes to the activeNotes array
+    // Add the notes to the activeNotes array using the spread function
     activeNotes.push(...midiNoteOutput);
   });
-
   myInput.addListener("noteoff", function (someMIDI) {
-    // Similarly, when a note off event is received, send a note off message to the output device.
-    // This signals the end of a note being played.
-    let midiNoteOutput = midiProcess(someMIDI);
-    // Stop only the notes that were played
-    midiNoteOutput.forEach((note) => {
-      // this finds the index of the active notes that were put into the array activeNotes
+    // Extract the MIDI note number from the MIDI event object
+    let rootNote = someMIDI.note.number + transposition;
+
+    // Get the intervals based on the selected chord type
+    let chordType = dropChord.value;
+    let intervals;
+    if (chordType == "no chord") {
+      intervals = [0]; // Just the root note
+    } else if (chordType == "major") {
+      intervals = [0, 4, 7]; // Major chord intervals
+    } else if (chordType == "minor") {
+      intervals = [0, 3, 7]; // Minor chord intervals
+    } else if (chordType == "augmented") {
+      intervals = [0, 4, 8]; // Augmented chord intervals
+    } else if (chordType == "diminished") {
+      intervals = [0, 3, 6]; // Diminished chord intervals
+    }
+
+    // Calculate the MIDI note numbers for all notes in the chord
+    let chordNotes = intervals.map((interval) => rootNote + interval);
+
+    // Stop each note in the chord
+    chordNotes.forEach((note) => {
+      // Find the index of the note in the activeNotes array
       let index = activeNotes.indexOf(note);
-      // !== is a strict inequality which seems like it does a better job at always seeing the different notes as different notes
       if (index !== -1) {
+        // If the note is found, stop it and remove it from activeNotes
         myOutput.stopNote(note);
-        // .splice is a method that removes or adds something from an array
-        activeNotes.splice(index, 1); // Remove the note from activeNotes at the specified index that is being referened
+        activeNotes.splice(index, 1);
       }
     });
   });
@@ -121,5 +137,5 @@ dropOutsIO.addEventListener("change", function () {
   // Change the output device based on the user's selection in the dropdown.
   // The '.channels[1]' specifies that the script should use the first channel of the selected output device.
   // MIDI channels are often used to separate messages for different instruments or sounds.
-  myOutput = WebMidi.outputs[dropOutsIO.value].channels[1];
+  myOutput = WebMidi.outputs[dropOutsIO.value].channels[0];
 });
